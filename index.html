@@ -1,0 +1,926 @@
+<title>DinoGol Sillabe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+/* Мир игры — вечерний стадион: газон, меловые линии, жёлтый мяч. Сознательно одна тема (игровой мир), все цвета заданы явно. */
+:root{
+  color-scheme:light;
+  --grass:#2f7d4f; --grass-2:#286c44; --chalk:#f4f7ef; --ink:#17301f;
+  --ball:#ffd23f; --dino:#ff8a3d; --sky:#173a5e; --soft:#e7f1e9; --miss:#9fb8a7;
+  --font-letter:"Andika","Comic Sans MS","Trebuchet MS",system-ui,sans-serif;
+  --font-display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+}
+/* Всё масштабируется от меньшей стороны экрана: --u = 1% ширины или 1,25% высоты, что меньше.
+   Экран никогда не прокручивается: поле и ворота занимают оставшееся место (flex:1 + container units). */
+:root{--u:min(1vw,1.25vh)}
+@supports (height:100dvh){:root{--u:min(1vw,1.25dvh)}}
+html,body{height:100%;overflow:hidden}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--grass);color:var(--chalk);font:400 calc(var(--u)*2.2)/1.35 var(--font-letter);
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+.app{height:100%;display:flex;flex-direction:column;overflow:hidden;
+  background:repeating-linear-gradient(90deg,var(--grass) 0 80px,var(--grass-2) 80px 160px);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible{outline:4px solid var(--ball);outline-offset:3px}
+.bar{display:flex;align-items:center;gap:10px;padding-block:clamp(4px,1.2vh,10px);flex:none}
+.bar .home{width:clamp(36px,calc(var(--u)*6),48px);height:clamp(36px,calc(var(--u)*6),48px);border-radius:50%;background:#ffffff26;font-size:clamp(18px,calc(var(--u)*3),24px)}
+.bar .stars{margin-left:auto;font-family:var(--font-display);font-size:clamp(18px,calc(var(--u)*3),24px);display:flex;align-items:center;gap:6px}
+.bar .ru{font-size:13px;padding:5px 10px;border-radius:20px;background:#ffffff1f;letter-spacing:.06em}
+.bar .ru[aria-pressed="true"]{background:var(--ball);color:var(--ink)}
+.screen{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,calc(var(--u)*1.8),16px);overflow:hidden;padding-block:0 clamp(6px,1.5vh,16px)}
+.screen > *{flex-shrink:0}
+h1,h2{font-family:var(--font-display);font-weight:400;margin:0;text-align:center;text-wrap:balance;letter-spacing:.02em}
+h1{font-size:clamp(28px,calc(var(--u)*9),72px);color:var(--ball);text-shadow:0 4px 0 #0000003a}
+h2{font-size:clamp(20px,calc(var(--u)*5),40px)}
+p{margin:0}
+.say{font-size:clamp(15px,calc(var(--u)*3.4),28px);text-align:center;max-width:30ch;text-wrap:balance}
+.ruhint{font-size:clamp(11px,calc(var(--u)*1.8),15px);color:#d5e7d9;text-align:center;max-width:52ch;font-family:system-ui,sans-serif}
+.ruhint[hidden]{display:none!important}
+.big-btn{font-family:var(--font-display);font-size:clamp(16px,calc(var(--u)*3.2),26px);background:var(--ball);color:var(--ink);padding:.5em 1.3em;border-radius:40px;box-shadow:0 5px 0 #c49a12}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c49a12}
+.speak{width:clamp(38px,calc(var(--u)*7),56px);height:clamp(38px,calc(var(--u)*7),56px);border-radius:50%;background:var(--chalk);color:var(--ink);font-size:clamp(18px,calc(var(--u)*3.2),26px);box-shadow:0 4px 0 #0000002e;flex:none}
+
+/* Главное меню: на узком экране карточки строками (значок слева), на широком — в ряд */
+.menu{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,calc(var(--u)*2),16px);width:min(100%,760px)}
+.card{background:var(--chalk);color:var(--ink);border-radius:clamp(12px,calc(var(--u)*2.6),22px);padding:clamp(8px,calc(var(--u)*2),18px);display:flex;flex-direction:column;align-items:center;gap:clamp(2px,calc(var(--u)*.8),8px);box-shadow:0 5px 0 #00000030;text-align:center;min-width:0}
+.card .ico{font-family:var(--font-letter);font-weight:700;font-size:clamp(26px,calc(var(--u)*6.5),56px);line-height:1}
+.card b{font-family:var(--font-display);font-weight:400;font-size:clamp(16px,calc(var(--u)*3),26px)}
+.card small{font-size:clamp(11px,calc(var(--u)*1.7),14px);color:#3f5c48;font-family:system-ui,sans-serif}
+@media (max-aspect-ratio:4/5){ .menu{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.album{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;font-size:clamp(18px,calc(var(--u)*3.4),30px)}
+.album .empty{opacity:.25;filter:grayscale(1)}
+.dino{width:clamp(70px,calc(var(--u)*18),170px);height:auto}
+.dino.bounce{animation:bounce .6s}
+@keyframes bounce{40%{transform:translateY(-14px) rotate(-4deg)}}
+
+/* Домик буквы */
+.house-body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,calc(var(--u)*1.8),16px);width:100%;min-height:0}
+.letter-tile{font:700 clamp(64px,max(calc(var(--u)*18),min(28vw,14vh)),180px)/1 var(--font-letter);width:1.25em;height:1.25em;display:grid;place-items:center;
+  background:var(--chalk);color:var(--sky);border-radius:.16em;box-shadow:0 6px 0 #00000030}
+.letter-tile.humming{animation:hum .18s infinite alternate;background:var(--ball)}
+@keyframes hum{to{transform:translateX(3px) scale(1.02)}}
+.letter-tile small{font-size:.16em;color:#5a6f62}
+.mouth{width:clamp(60px,calc(var(--u)*12),120px);height:auto}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(6px,calc(var(--u)*1.4),12px);max-width:100%}
+.syl{font:700 clamp(22px,calc(var(--u)*6),56px)/1 var(--font-letter);min-width:2.1em;padding:.25em .2em;border-radius:.3em;background:var(--chalk);color:var(--sky);box-shadow:0 4px 0 #00000030}
+.syl .c{color:var(--dino)}
+.syl.on{background:var(--ball);transform:translateY(-4px)}
+.word{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--chalk);color:var(--ink);border-radius:.6em;padding:.4em .6em;box-shadow:0 4px 0 #00000030;font-size:clamp(14px,calc(var(--u)*3),30px)}
+.word span{font-size:1.6em;line-height:1}
+.word b{font-weight:700;font-family:var(--font-letter);letter-spacing:.06em}
+.word b i{font-style:normal;color:var(--dino)}
+.steps{display:flex;gap:8px}
+.steps i{width:10px;height:10px;border-radius:50%;background:#ffffff40}
+.steps i.on{background:var(--ball)}
+.nav{display:flex;gap:clamp(8px,calc(var(--u)*1.6),14px);align-items:center;max-width:100%}
+
+/* Поле «Il passaggio»: занимает всё свободное место, игроки и мяч — в долях поля (cqh/cqw) */
+.pitch{position:relative;width:min(100%,900px);flex:1 1 0 !important;min-height:140px;border:3px solid var(--chalk);border-radius:12px;touch-action:none;container-type:size}
+.pitch::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #f4f7ef80}
+.pitch::after{content:"";position:absolute;left:50%;top:50%;width:min(90px,24cqh);height:min(90px,24cqh);border:3px solid #f4f7ef80;border-radius:50%;transform:translate(-50%,-50%)}
+.player{--s:min(64px,17cqh,13cqw);position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:var(--sky);color:var(--chalk);
+  font:700 calc(var(--s)*.56)/var(--s) var(--font-letter);text-align:center;transform:translate(-50%,-50%);box-shadow:0 4px 0 #00000040;z-index:1}
+.player.hit{background:var(--dino)}
+.ballp{--s:min(84px,22cqh,17cqw);position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff7c9,var(--ball) 55%,#d9a90f);
+  color:var(--sky);font:700 calc(var(--s)*.55)/var(--s) var(--font-letter);text-align:center;transform:translate(-50%,-50%);box-shadow:0 5px 0 #00000040;z-index:2;touch-action:none;cursor:grab}
+.ballp.drag{cursor:grabbing;transform:translate(-50%,-50%) scale(1.08)}
+.ballp.anim{transition:left .45s ease,top .45s ease}
+.result{font:700 clamp(30px,calc(var(--u)*8),90px)/1 var(--font-letter);height:1em;color:var(--ball);text-shadow:0 4px 0 #0000003a}
+.result .c{color:var(--chalk)}
+
+/* «I rigori»: зона ворот занимает свободное место, ворота вписываются в неё с пропорцией 2,2:1 */
+.goal-zone{flex:1 1 0 !important;min-height:120px;width:100%;container-type:size;display:flex;justify-content:center;align-items:flex-start}
+.goal{position:relative;width:min(100cqw,700px,calc(78cqh*2.2));aspect-ratio:2.2/1;border:min(8px,2cqh) solid var(--chalk);border-bottom:0;border-radius:8px 8px 0 0;
+  background:repeating-linear-gradient(45deg,#ffffff14 0 2px,transparent 2px 14px),repeating-linear-gradient(-45deg,#ffffff14 0 2px,transparent 2px 14px)}
+.goal .opts{position:absolute;inset:10% 4% 22%;display:flex;justify-content:space-around;align-items:center;gap:6px}
+.goal .syl{min-width:2em;font-size:min(56px,13cqh,7.5cqw)}
+.goal .syl.gone{opacity:.25;pointer-events:none}
+.goal .keeper{position:absolute;left:50%;bottom:-4px;width:min(84px,24cqh);transform:translateX(-50%);transition:left .35s ease}
+.kick-ball{--b:min(44px,12cqh);position:absolute;left:50%;bottom:calc(-1 * min(70px,19cqh));width:var(--b);height:var(--b);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ddd 60%,#999);transform:translateX(-50%);transition:all .45s cubic-bezier(.2,.8,.3,1)}
+.score{font-family:var(--font-display);font-size:clamp(14px,calc(var(--u)*2.6),22px)}
+.flash{font-family:var(--font-display);font-size:clamp(26px,calc(var(--u)*7),88px);color:var(--ball);height:1.1em;text-shadow:0 5px 0 #0000003a}
+.warn{background:#fff3cd;color:#5c4400;border-radius:14px;padding:10px 14px;font-size:14px;max-width:520px;font-family:system-ui,sans-serif}
+.warn[hidden]{display:none!important}
+/* ===== Живой стадион: фон, движение, праздники ===== */
+body{background:linear-gradient(180deg,#0b1f38 0%,#173a5e 20%,#2f7d4f 29%)}
+.app{position:relative;z-index:1;background:transparent!important}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg .grass{position:absolute;left:0;right:0;top:29%;bottom:0;background:repeating-linear-gradient(90deg,var(--grass) 0 80px,var(--grass-2) 80px 160px)}
+.bg .grass::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,#ffffff22,transparent 60%)}
+.bg .crowd{position:absolute;left:-4%;right:-4%;top:21%;height:8.5%;background:#10304f;overflow:hidden}
+.bg .crowd i{position:absolute;inset:0;background:radial-gradient(circle at 9px 70%,var(--c) 0 5px,transparent 6px) 0 0/var(--w) 100%;animation:fans var(--t) ease-in-out infinite alternate}
+.bg .crowd i:nth-child(1){--c:#ffd23f;--w:24px;--t:.9s}
+.bg .crowd i:nth-child(2){--c:#ff8a3d;--w:30px;--t:1.2s;left:9px;top:-20%}
+.bg .crowd i:nth-child(3){--c:#f4f7ef;--w:36px;--t:.7s;left:17px;top:-38%}
+@keyframes fans{to{transform:translateY(-3px)}}
+.bg.wave .crowd i{animation-duration:.18s}
+.bg .light{position:absolute;top:2%;width:22vmin;height:22vmin;border-radius:50%;background:radial-gradient(circle,#fff8d6 0 8%,#fff3a855 22%,transparent 62%);animation:glow 3s ease-in-out infinite alternate}
+.bg .light.l{left:-4vmin}.bg .light.r{right:-4vmin;animation-delay:1.5s}
+@keyframes glow{to{opacity:.65;transform:scale(1.08)}}
+.bg .star{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.15}}
+.bg .cloud{position:absolute;height:5vmin;width:22vmin;border-radius:5vmin;background:#ffffff14;animation:drift 70s linear infinite}
+@keyframes drift{from{transform:translateX(-30vmin)}to{transform:translateX(130vw)}}
+.bg .bubble{position:absolute;bottom:-12vmin;font:700 clamp(18px,5vmin,40px)/1 var(--font-letter);color:#ffffff30;border:2px solid #ffffff22;border-radius:50%;width:2.4em;height:2.4em;display:grid;place-items:center;animation:rise linear infinite}
+#bg.game .bubble{display:none}
+.pitch{background:repeating-linear-gradient(90deg,var(--grass) 0 12.5%,var(--grass-2) 12.5% 25%)}
+@keyframes rise{to{transform:translateY(-120vh) translateX(4vmin)}}
+.bg .runner{position:absolute;bottom:1.5vh;left:0;font-size:clamp(26px,6vmin,48px);animation:run 16s linear infinite}
+.bg .runner span{display:inline-block;transform:scaleX(-1);animation:hop .35s ease-in-out infinite alternate}
+@keyframes run{0%{transform:translateX(-12vmin)}45%,100%{transform:translateX(115vw)}}
+@keyframes hop{to{translate:0 -8px}}
+.sub{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(12px,calc(var(--u)*2.3),19px);opacity:0;transition:opacity .25s;color:var(--ball)}
+.sub.on{opacity:1}
+.stars.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.45)}}
+.flystar{position:fixed;z-index:60;font-size:30px;pointer-events:none;transition:left .8s cubic-bezier(.5,-.3,.6,1),top .8s cubic-bezier(.5,-.3,.6,1),transform .8s;transform:translate(-50%,-50%) scale(1.4)}
+.fx{position:fixed;inset:0;width:100%;height:100%;z-index:55;pointer-events:none}
+/* Rex живой */
+.rex-tail{transform-box:fill-box;transform-origin:0% 70%;animation:wag 1.3s ease-in-out infinite}
+@keyframes wag{50%{transform:rotate(-16deg)}}
+.rex-eye{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+@keyframes blink{0%,91%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}
+.rex-arm{transform-box:fill-box;transform-origin:50% 0%;animation:arm 1.8s ease-in-out infinite}
+@keyframes arm{50%{transform:rotate(10deg)}}
+.dino{animation:idle 2.8s ease-in-out infinite}
+@keyframes idle{50%{transform:translateY(-5px)}}
+.dino.bounce,.dino.party{animation:party .9s}
+@keyframes party{30%{transform:translateY(-24px) rotate(-10deg) scale(1.05)}60%{transform:translateY(-8px) rotate(8deg)}}
+.goal .keeper{animation:sway 2.2s ease-in-out infinite}
+@keyframes sway{50%{transform:translateX(-50%) translateY(-3px)}}
+.goal .keeper.dive{animation:dive .55s}
+@keyframes dive{50%{transform:translateX(-50%) rotate(-28deg) scale(1.1)}}
+.goal.net{animation:net .5s}
+@keyframes net{30%{background-position:0 6px,0 6px;transform:scale(1.015)}}
+.kick-ball{background:none!important;font-size:var(--b);line-height:1;text-align:center;width:auto!important;height:auto!important}
+.kick-ball.fly{animation:spin .45s linear}
+@keyframes spin{to{rotate:720deg}}
+/* Карточки, буквы, мячи */
+.card{animation:float 3.6s ease-in-out infinite}
+.card:nth-child(2){animation-delay:.6s}.card:nth-child(3){animation-delay:1.2s}
+@keyframes float{50%{transform:translateY(-5px)}}
+.card:active,.syl:active,.word:active{transform:scale(.95)}
+h1 .w{display:inline-block;animation:wave 2.4s ease-in-out infinite}
+@keyframes wave{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-10px) rotate(-4deg)}}
+.big-btn.glow{animation:glowbtn 1.6s ease-in-out infinite}
+@keyframes glowbtn{50%{box-shadow:0 5px 0 #c49a12,0 0 0 10px #ffd23f40}}
+.letter-tile:not(.humming){animation:wiggle 3.2s ease-in-out infinite}
+@keyframes wiggle{0%,78%,100%{transform:rotate(0)}84%{transform:rotate(-7deg)}90%{transform:rotate(6deg)}95%{transform:rotate(-2deg)}}
+.house-body > *,.row > *{animation:popin .45s both}
+.house-body > :nth-child(2),.row > :nth-child(2){animation-delay:.08s}
+.house-body > :nth-child(3),.row > :nth-child(3){animation-delay:.16s}
+.house-body > :nth-child(4),.row > :nth-child(4){animation-delay:.24s}
+.row > :nth-child(5){animation-delay:.32s}
+@keyframes popin{from{opacity:0;transform:scale(.6) translateY(10px)}}
+.player{animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,-50%) translateY(-5px)}}
+.ballp:not(.drag):not(.anim){animation:invite 1.3s ease-in-out infinite}
+@keyframes invite{50%{transform:translate(-50%,-50%) scale(1.1)}}
+.hint{position:absolute;z-index:3;font-size:min(40px,12cqh);pointer-events:none;animation:hintmove 2.2s ease-in-out infinite}
+@keyframes hintmove{0%{left:var(--x1);top:var(--y1);opacity:0}15%{opacity:1}75%{left:var(--x2);top:var(--y2);opacity:1}100%{left:var(--x2);top:var(--y2);opacity:0}}
+.result.pop,.flash.pop{animation:popin .4s}
+/* Окно «новый динозавр» */
+.unlock{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:#0b1f38c0}
+.unlock div{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--chalk);color:var(--ink);border-radius:24px;padding:24px 36px;animation:popin .4s}
+.unlock .e{font-size:clamp(70px,22vmin,140px);line-height:1;animation:party 1s infinite}
+.unlock b{font-family:var(--font-display);font-weight:400;font-size:clamp(22px,6vmin,36px)}
+/* Выбор буквы в меню */
+.letters{display:flex;gap:clamp(6px,calc(var(--u)*1.4),12px);justify-content:center;flex-wrap:wrap}
+.chip{font:700 clamp(20px,calc(var(--u)*4.4),38px)/1 var(--font-letter);width:2em;height:2em;border-radius:50%;background:#ffffff26;color:var(--chalk);border:3px solid #ffffff55;transition:transform .2s}
+.chip.all{width:auto;padding:0 .7em;border-radius:1em;font-size:clamp(14px,calc(var(--u)*2.4),22px);font-family:var(--font-display);font-weight:400;letter-spacing:.04em}
+.chip.on{background:var(--ball);color:var(--ink);border-color:var(--ball);transform:scale(1.1)}
+@media (max-height:520px){ #s-menu .dino{display:none} } /* низкий экран (телефон лёжа): меню без большого Rex, чтобы всё влезло */
+/* Текст поверх неба и трибун: тёмный ореол, чтобы читался на любом фоне */
+.screen > h2,.screen > .say,.nav .say,.score,.album + .ruhint,.screen > .ruhint,#v-stats{text-shadow:0 2px 0 #0b1f38,0 0 6px #0b1f38,0 0 12px #0b1f38cc}
+/* Parla tu! */
+.vcol{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,calc(var(--u)*1.4),12px)}
+#s-menu .dino{width:clamp(56px,calc(var(--u)*11),140px)}
+#s-voice.nomic .meter,#s-voice.nomic #v-res,#s-voice.nomic #v-stats{display:none!important}
+@media (max-height:520px){
+  #s-voice .letter-tile{font-size:44px} #s-voice .mouth{width:64px}
+  .mic{width:56px;height:56px;font-size:26px} #s-voice .flash{font-size:24px}
+  .warn{font-size:12px;padding:6px 10px;line-height:1.3}
+}
+.vrow{display:flex;align-items:center;gap:clamp(8px,calc(var(--u)*2),20px)}
+#s-voice .letter-tile{font-size:clamp(56px,calc(var(--u)*14),150px)}
+.meter{position:relative;width:min(100%,520px);height:clamp(22px,calc(var(--u)*4),36px);border-radius:20px;background:#ffffff26;overflow:hidden;flex:none}
+.meter > div{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#7be07b,var(--ball));transition:width .08s}
+.meter span{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:.8em}
+.meter b{position:absolute;right:6px;top:50%;transform:translateY(-50%)}
+.mic{width:clamp(64px,calc(var(--u)*12),104px);height:clamp(64px,calc(var(--u)*12),104px);border-radius:50%;background:var(--dino);font-size:clamp(30px,calc(var(--u)*6),52px);box-shadow:0 6px 0 #b85a1d;touch-action:none}
+.mic.rec{background:#e5484d;animation:recpulse .8s ease-in-out infinite}
+@keyframes recpulse{50%{box-shadow:0 6px 0 #9c2a2e,0 0 0 14px #e5484d55}}
+.lnk-mic{font-family:var(--font-display);font-size:clamp(14px,calc(var(--u)*2.6),20px);background:var(--dino);color:#fff;padding:.35em .9em;border-radius:30px;box-shadow:0 4px 0 #b85a1d}
+/* Панель для взрослых */
+.settings{position:fixed;inset:0;z-index:80;background:#0b1f38d9;display:grid;place-items:center;padding:16px}
+.settings .panel{background:var(--chalk);color:var(--ink);border-radius:20px;padding:18px 20px;width:min(100%,520px);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px;font:15px/1.4 system-ui,sans-serif;user-select:text}
+.settings h2{font-size:24px;color:var(--ink)} .settings h3{margin:6px 0 0;font-size:17px}
+.settings label{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.settings select{font:inherit;padding:6px;border-radius:8px;max-width:100%}
+.settings .note{font-size:13px;color:#3f5c48;margin:0}
+.recrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #d5e2d8}
+.recrow b{font:700 24px var(--font-letter);width:1.4em}
+.recrow button{background:var(--sky);color:#fff;border-radius:8px;padding:6px 10px;font-size:14px}
+.recrow small{color:#6b7f72}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="bg" id="bg" aria-hidden="true"><div class="light l"></div><div class="light r"></div><div class="crowd"><i></i><i></i><i></i></div><div class="grass"></div><div class="runner"><span>🦖</span></div></div>
+<canvas class="fx" id="fx" aria-hidden="true"></canvas>
+<div class="settings" id="settings" hidden>
+  <div class="panel" role="dialog" aria-label="Настройки для взрослых">
+    <h2>Для взрослых</h2>
+    <label>Голос ведущего <select id="set-voice"></select></label>
+    <label>Скорость речи <input type="range" id="set-rate" min="0.7" max="1.1" step="0.05"> <span id="set-rate-v"></span></label>
+    <button class="big-btn" id="set-test" style="font-size:16px">▶ Послушать голос</button>
+    <p class="note">Если голос звучит «в нос» или как робот — выберите другой. Лучшие: Google italiano, Alice, Federica, Luca, Paola. На iPhone и Mac можно скачать улучшенный голос: Настройки → Универсальный доступ → Устный контент → Голоса → Итальянский → Federica (улучшенный).</p>
+    <h3>Звуки букв живым голосом</h3>
+    <p class="note">Нажмите «записать» и 2 секунды тяните звук без гласной: «ммм», «ллл», «ссс». Игра будет использовать запись вместо синтеза. Запись хранится только на этом устройстве.</p>
+    <div id="set-rec"></div>
+    <button class="big-btn" id="set-close" style="font-size:16px">Готово</button>
+  </div>
+</div>
+<div class="app">
+  <div class="bar">
+    <button class="home" id="btn-home" aria-label="Menu" hidden>⌂</button>
+    <button class="ru" id="btn-ru" aria-pressed="false" title="Подсказки по-русски для взрослых">RU</button>
+    <button class="ru" id="btn-set" title="Для взрослых: голос и запись звуков">⚙</button>
+    <div class="sub" id="sub" aria-hidden="true"></div>
+    <div class="stars" id="stars" aria-label="Stelle"><span>⭐</span><span id="star-count">0</span></div>
+  </div>
+
+  <!-- Старт: нужен один тап, чтобы браузер разрешил звук -->
+  <section class="screen" id="s-start">
+    <svg class="dino" viewBox="0 0 200 200" aria-hidden="true" id="dino-start"></svg>
+    <h1 id="title">DinoGol</h1>
+    <p class="say">Gioca con Rex e impara le sillabe!</p>
+    <p class="ruhint" hidden>Игра для внука: голос итальянский. Нажмите «GIOCA», чтобы включить звук.</p>
+    <button class="big-btn glow" id="btn-start">GIOCA ⚽</button>
+    <p class="warn" id="voice-warn" hidden></p>
+  </section>
+
+  <!-- Меню -->
+  <section class="screen" id="s-menu" hidden>
+    <svg class="dino" viewBox="0 0 200 200" aria-hidden="true" id="dino-menu"></svg>
+    <h2>Che cosa giochiamo?</h2>
+    <div class="letters" id="letters" role="group" aria-label="Lettera"></div>
+    <div class="menu">
+      <button class="card" data-go="house"><span class="ico" id="ico-house">M</span><b id="t-house">La casa della M</b><small>Conosci la lettera</small><small class="ruhint" hidden>Домик буквы: имя и звук</small></button>
+      <button class="card" data-go="pass"><span class="ico" id="ico-pass">M→O</span><b>Il passaggio</b><small>Passa la palla, fai la sillaba</small><small class="ruhint" hidden>Сцепка: слияние звуков</small></button>
+      <button class="card" data-go="kick"><span class="ico">🥅</span><b>I rigori</b><small>Ascolta e tira!</small><small class="ruhint" hidden>Узнай слог на слух</small></button>
+      <button class="card" data-go="voice"><span class="ico">🎤</span><b>Parla tu!</b><small>Fai il suono</small><small class="ruhint" hidden>Произнеси звук в микрофон</small></button>
+    </div>
+    <p class="say" style="font-size:clamp(13px,calc(var(--u)*2.2),18px)">I tuoi dinosauri</p>
+    <div class="album" id="album"></div>
+    <p class="ruhint" hidden>За каждые 5 звёзд — новый динозавр в коллекцию. 10 минут в день достаточно.</p>
+  </section>
+
+  <!-- Домик буквы M -->
+  <section class="screen" id="s-house" hidden>
+    <div class="steps" id="house-steps"></div>
+    <div id="house-body" class="house-body"></div>
+    <div class="nav">
+      <button class="speak" id="house-again" aria-label="Ascolta di nuovo">🔊</button>
+      <button class="big-btn" id="house-next">AVANTI ➜</button>
+    </div>
+  </section>
+
+  <!-- Il passaggio (сцепка) -->
+  <section class="screen" id="s-pass" hidden>
+    <div class="nav"><button class="speak" id="pass-again" aria-label="Ascolta di nuovo">🔊</button><p class="say" id="pass-say"></p></div>
+    <p class="ruhint" id="pass-ru" hidden></p>
+    <div class="pitch" id="pitch"></div>
+    <div class="result" id="pass-result" aria-live="polite"></div>
+  </section>
+
+  <!-- Parla tu! (произношение в микрофон) -->
+  <section class="screen" id="s-voice" hidden>
+    <div class="score" id="v-score"></div>
+    <div class="vrow"><div class="letter-tile" id="v-tile">M</div><div id="v-mouth"></div></div>
+    <p class="say" id="v-say"></p>
+    <p class="ruhint" id="v-ru" hidden></p>
+    <div class="meter" aria-hidden="true"><div id="v-fill"></div><span>⚽</span><b>🥅</b></div>
+    <div class="nav">
+      <button class="speak" id="v-rex" aria-label="Ascolta Rex">🦖</button>
+      <button class="mic" id="v-mic" aria-label="Tieni premuto e parla">🎤</button>
+      <button class="speak" id="v-me" aria-label="Ascolta te" hidden>👂</button>
+      <button class="speak" id="v-again" aria-label="Un altro suono">↻</button>
+    </div>
+    <div class="flash" id="v-res" aria-live="polite"></div>
+    <p class="ruhint" id="v-stats" hidden></p>
+    <p class="warn" id="v-nomic" hidden>Il microfono non è disponibile qui.<br>Микрофон в этом окне недоступен: браузер разрешает его только на обычной странице (сайт или файл). Остальные игры работают.</p>
+  </section>
+
+  <!-- I rigori (узнавание на слух) -->
+  <section class="screen" id="s-kick" hidden>
+    <div class="score" id="kick-score"></div>
+    <div class="nav"><button class="speak" id="kick-again" aria-label="Ascolta di nuovo">🔊</button><p class="say">Ascolta e tira nella sillaba giusta!</p></div>
+    <p class="ruhint" hidden>Голос говорит слог — нужно нажать на правильный. Ошибка не наказывается: вратарь ловит мяч, слог звучит ещё раз.</p>
+    <div class="goal-zone"><div class="goal" id="goal">
+      <div class="opts" id="kick-opts"></div>
+      <svg class="keeper" id="keeper" viewBox="0 0 200 200" aria-hidden="true"></svg>
+      <div class="kick-ball" id="kick-ball">⚽</div>
+    </div></div>
+    <div class="flash" id="kick-flash" aria-live="polite"></div>
+  </section>
+</div>
+
+<script>
+/* ===== Настройки, которые легко править =====
+   SAY — как синтезатору произносить слоги. Если голос телефона читает «em» по буквам, поменяйте запись здесь. */
+var SAY_FIX = {}; // пример: {EM:'emm'} — если голос телефона читает слог по буквам
+function say(syl){ return SAY_FIX[syl] || syl.toLowerCase(); }
+var VOWELS = ['A','E','I','O','U'];
+/* Буквы игры. Новую букву добавить сюда же: имя, звук, как поставить рот, слова с картинками. snd: nasal | liquid | hiss */
+var LETTERS = {
+  M:{name:'emme', ru:'эмме', sound:'mmm', soundRu:'ммм', snd:'nasal', mouth:'lips',
+     how:'Labbra chiuse: il suono vibra nel naso.', howRu:'губы сомкнуты, звук гудит в носу',
+     words:[['🍎','MELA','mela'],['✋','MANO','mano'],['🏍️','MOTO','moto']]},
+  L:{name:'elle', ru:'элле', sound:'lll', soundRu:'ллл', snd:'liquid', mouth:'tongue',
+     how:'La lingua tocca i denti di sopra.', howRu:'кончик языка прижат к верхним зубам',
+     words:[['🌙','LUNA','luna'],['🦁','LEONE','leone'],['🍋','LIMONE','limone']]},
+  S:{name:'esse', ru:'эссе', sound:'sss', soundRu:'ссс', snd:'hiss', mouth:'teeth',
+     how:'Denti vicini: l\'aria fischia come un serpente.', howRu:'зубы почти сомкнуты, воздух свистит, как змея',
+     words:[['☀️','SOLE','sole'],['🐍','SERPENTE','serpente'],['🪑','SEDIA','sedia']]}
+};
+var LETTER_KEYS = Object.keys(LETTERS);
+function fwd(L){ return VOWELS.map(function (v) { return L + v; }); }
+function inv(L){ return VOWELS.map(function (v) { return v + L; }); }
+function isCons(ch){ return VOWELS.indexOf(ch) < 0; }
+var DINOS = ['🦖','🦕','🐊','🐢','🦎','🐉','🦖','🦕','🏆','⚽'];
+
+/* ===== Состояние (звёзды и трудные слоги — в браузере, если он разрешает) ===== */
+var state = {stars:0, miss:{}, ru:false, sel:'M', last:'M', voice:'', rate:0.9, rec:{}};
+try { var saved = JSON.parse(localStorage.getItem('dinogol') || 'null'); if (saved) state = Object.assign(state, saved); } catch (e) {}
+function save(){ try { localStorage.setItem('dinogol', JSON.stringify(state)); } catch (e) {} }
+var $ = function (id) { return document.getElementById(id); };
+function cur(){ return state.sel === 'ALL' ? (state.last || 'M') : state.sel; } // буква для домика
+function activeLetters(){ return state.sel === 'ALL' ? LETTER_KEYS : [state.sel]; }
+
+/* ===== Рисунок героя: динозавр Rex в футбольной майке (свой персонаж) ===== */
+var REX = '<ellipse cx="100" cy="186" rx="56" ry="9" fill="#0000002e"/>' +
+  '<path class="rex-tail" d="M150 150 q38 6 42 -22 q-18 10 -40 4z" fill="#3fae6a"/>' +
+  '<rect x="62" y="100" width="76" height="70" rx="30" fill="#ffd23f"/>' +
+  '<text x="100" y="150" text-anchor="middle" font-family="Lilita One,Arial" font-size="34" fill="#173a5e">7</text>' +
+  '<rect x="70" y="160" width="20" height="26" rx="8" fill="#3fae6a"/><rect x="110" y="160" width="20" height="26" rx="8" fill="#3fae6a"/>' +
+  '<path d="M60 112 q-16 10 -12 24" stroke="#3fae6a" stroke-width="12" stroke-linecap="round" fill="none"/>' +
+  '<path class="rex-arm" d="M140 112 q16 10 12 24" stroke="#3fae6a" stroke-width="12" stroke-linecap="round" fill="none"/>' +
+  '<path d="M58 40 q42 -36 86 0 q16 22 6 50 q-6 18 -50 20 q-44 -2 -48 -30 q-4 -22 6 -40z" fill="#3fae6a"/>' +
+  '<path d="M78 22 l6 -14 l8 14 M98 16 l7 -14 l7 14 M118 22 l8 -12 l5 15" fill="#2a8a52"/>' +
+  '<g class="rex-eye"><circle cx="120" cy="54" r="12" fill="#fff"/><circle cx="123" cy="55" r="6" fill="#17301f"/></g>' +
+  '<path d="M84 84 q24 16 52 0" stroke="#17301f" stroke-width="5" stroke-linecap="round" fill="none"/>' +
+  '<circle cx="70" cy="66" r="4" fill="#2a8a52"/>';
+['dino-start','dino-menu','keeper'].forEach(function (id) { $(id).innerHTML = REX; });
+/* ===== Эффекты: фон, конфетти, летящая звезда, субтитры, щелчки ===== */
+var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function buildBg(){
+  var bg = $('bg'), i, el, syl = ['MA','LO','ES','MI','IL','SU','OM','LA'];
+  for (i = 0; i < 22; i++) { el = document.createElement('span'); el.className = 'star';
+    el.style.left = Math.random() * 100 + '%'; el.style.top = Math.random() * 18 + '%'; el.style.animationDelay = (Math.random() * 2.4) + 's'; bg.appendChild(el); }
+  for (i = 0; i < 7; i++) { el = document.createElement('span'); el.className = 'bubble'; el.textContent = syl[i];
+    el.style.left = (6 + i * 13) + '%'; el.style.animationDuration = (16 + Math.random() * 10) + 's'; el.style.animationDelay = (-Math.random() * 20) + 's'; bg.appendChild(el); }
+  var t = $('title'); t.innerHTML = t.textContent.split('').map(function (ch, k) { return '<span class="w" style="animation-delay:' + (k * .1) + 's">' + ch + '</span>'; }).join('');
+})();
+var fx = $('fx'), fctx = fx.getContext('2d'), parts = [], fxRun = false;
+function fxSize(){ var r = window.devicePixelRatio || 1; fx.width = innerWidth * r; fx.height = innerHeight * r; fctx.setTransform(r, 0, 0, r, 0, 0); }
+fxSize(); addEventListener('resize', fxSize);
+function confetti(x, y, n){
+  if (calm) return; var cols = ['#ffd23f','#ff8a3d','#f4f7ef','#5ec8ff','#ff5d8f','#7be07b'];
+  for (var i = 0; i < (n || 70); i++) { var a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 7;
+    parts.push({x:x, y:y, vx:Math.cos(a) * v, vy:Math.sin(a) * v - 5, r:4 + Math.random() * 5, c:cols[i % cols.length], rot:Math.random() * 6, life:70 + Math.random() * 30}); }
+  if (!fxRun) { fxRun = true; requestAnimationFrame(fxTick); }
+}
+function fxTick(){
+  fctx.clearRect(0, 0, innerWidth, innerHeight);
+  parts = parts.filter(function (p) { return p.life-- > 0; });
+  parts.forEach(function (p) { p.vy += .25; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.rot += .2;
+    fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(p.rot); fctx.globalAlpha = Math.min(1, p.life / 30); fctx.fillStyle = p.c; fctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); fctx.restore(); });
+  if (parts.length) requestAnimationFrame(fxTick); else { fxRun = false; fctx.clearRect(0, 0, innerWidth, innerHeight); }
+}
+function centerOf(el){ var r = el.getBoundingClientRect(); return {x:r.left + r.width / 2, y:r.top + r.height / 2}; }
+function party(el){ var c = el ? centerOf(el) : {x:innerWidth / 2, y:innerHeight / 2}; confetti(c.x, c.y); var bg = $('bg'); bg.classList.add('wave'); setTimeout(function () { bg.classList.remove('wave'); }, 1600); }
+function flyStar(from){
+  var st = $('stars'); if (!from || calm) { popStars(); return; }
+  var a = centerOf(from), b = centerOf(st), s = document.createElement('span');
+  s.className = 'flystar'; s.textContent = '⭐'; s.style.left = a.x + 'px'; s.style.top = a.y + 'px'; document.body.appendChild(s);
+  requestAnimationFrame(function () { requestAnimationFrame(function () { s.style.left = b.x + 'px'; s.style.top = b.y + 'px'; s.style.transform = 'translate(-50%,-50%) scale(.6)'; }); });
+  setTimeout(function () { s.remove(); popStars(); }, 820);
+}
+function popStars(){ var st = $('stars'); st.classList.remove('pop'); void st.offsetWidth; st.classList.add('pop'); }
+function retrigger(el, cls){ if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+var subTimer = null;
+function subtitle(text){ var el = $('sub'); el.textContent = text; el.classList.add('on'); clearTimeout(subTimer); subTimer = setTimeout(function () { el.classList.remove('on'); }, 1400 + text.length * 70); }
+document.addEventListener('pointerdown', function (e) { var b = e.target.closest && e.target.closest('button'); if (b && b.id !== 'hold-letter') blip(); });
+function blip(){ var c = ctx; if (!c) return; var o = c.createOscillator(), g = c.createGain(); o.frequency.value = 620 + Math.random() * 120;
+  g.gain.setValueAtTime(.08, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .09); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + .1); }
+function showUnlock(emoji){
+  var o = document.createElement('div'); o.className = 'unlock';
+  o.innerHTML = '<div><span class="e">' + emoji + '</span><b>Nuovo dinosauro!</b><span class="ruhint"' + (state.ru ? '' : ' hidden') + '>Новый динозавр в коллекции!</span></div>';
+  document.body.appendChild(o); cheer(); confetti(innerWidth / 2, innerHeight / 2, 120);
+  var close = function () { o.remove(); }; o.onclick = close; setTimeout(close, 2600);
+}
+function cheerDino(id){ var d = $(id); if (!d) return; d.classList.remove('bounce'); void d.offsetWidth; d.classList.add('bounce'); }
+
+/* ===== Звук: голос (it-IT) + синтез «ммм» + стадион ===== */
+var voice = null, ctx = null;
+var BAD_VOICES = /eddy|flo\b|grandma|grandpa|reed|rocko|sandy|shelley|nonna|nonno|compact|espeak/i; // роботизированные, звучат «в нос»
+function voiceScore(v){
+  var n = v.name;
+  if (BAD_VOICES.test(n)) return -10;
+  var sc = 0;
+  if (/google/i.test(n)) sc += 6;
+  if (/premium|enhanced|natural|neural|migliorat/i.test(n)) sc += 5;
+  if (/alice|federica|luca|paola|elsa|isabella|diego|cosimo/i.test(n)) sc += 3;
+  if (/^it(-|_)IT/i.test(v.lang)) sc += 1;
+  if (v.localService === false) sc += 1;
+  return sc;
+}
+function itVoices(){ var vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; return vs.filter(function (v) { return /^it/i.test(v.lang); }); }
+function pickVoice(){
+  var vs = itVoices();
+  var chosen = state.voice && vs.find(function (v) { return v.name === state.voice; });
+  voice = chosen || vs.slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); })[0] || null;
+  return voice;
+}
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, done, quiet){
+  if (!window.speechSynthesis) { if (!quiet) subtitle(text); if (done) setTimeout(done, 300); return; }
+  speechSynthesis.cancel();
+  if (!quiet) subtitle(text);
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'it-IT'; if (voice) u.voice = voice; u.rate = state.rate || 0.9; u.pitch = 1;
+  var fired = false; function fin(){ if (!fired) { fired = true; if (done) done(); } }
+  u.onend = fin; u.onerror = fin;
+  setTimeout(fin, 900 + text.length * 120); // запасной таймер: на некоторых телефонах onend не приходит
+  speechSynthesis.speak(u);
+}
+function audio(){ if (!ctx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) ctx = new AC(); } if (ctx && ctx.state === 'suspended') ctx.resume(); return ctx; }
+/* Звук буквы. 1) Если взрослый записал звук в панели ⚙ — играем запись (живой голос).
+   2) Иначе синтез «как голос»: голосовой источник (гармоники со спадом, лёгкое дрожание высоты и громкости, придыхание)
+      через формантные фильтры: M — носовой ропот (F 250/1100/2300, провал ~800 Гц); L — F 360/1350/2700; S — шум 4–9 кГц. */
+var sndNode = null, recAudio = null;
+function glottalWave(c){
+  var n = 48, re = new Float32Array(n), im = new Float32Array(n);
+  for (var k = 1; k < n; k++) im[k] = 1 / Math.pow(k, 1.6); // спад ~ -10 дБ/окт, как у голосовых связок
+  return c.createPeriodicWave(re, im);
+}
+function formant(c, input, out, freq, q, gain){
+  var f = c.createBiquadFilter(), g = c.createGain(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; g.gain.value = gain;
+  input.connect(f); f.connect(g); g.connect(out); return f;
+}
+function soundStart(L){
+  L = L || cur();
+  if (state.rec && state.rec[L]) { // живая запись
+    try { recAudio = new Audio(state.rec[L]); recAudio.loop = true; recAudio.play(); } catch (e) {}
+    return;
+  }
+  var c = audio(); if (!c || sndNode) return;
+  var type = (LETTERS[L] || LETTERS.M).snd, out = c.createGain(), t = c.currentTime, nodes = [], peak;
+  out.gain.setValueAtTime(0, t);
+  var noise = function (len) { var b = c.createBuffer(1, c.sampleRate * len, c.sampleRate), d = b.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; var s = c.createBufferSource(); s.buffer = b; s.loop = true; return s; };
+  if (type === 'hiss') {
+    var src = noise(2), bp = c.createBiquadFilter(), hs = c.createBiquadFilter(), am = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+    bp.type = 'bandpass'; bp.frequency.value = 6200; bp.Q.value = 1.1;
+    hs.type = 'highshelf'; hs.frequency.value = 9000; hs.gain.value = -12;
+    lfo.frequency.value = 3.3; lg.gain.value = 0.12; am.gain.value = 0.88; lfo.connect(lg); lg.connect(am.gain);
+    src.connect(bp); bp.connect(hs); hs.connect(am); am.connect(out); src.start(); lfo.start(); nodes = [src, lfo]; peak = 0.9;
+  } else {
+    var o = c.createOscillator(), vib = c.createOscillator(), vg = c.createGain(), drift = c.createOscillator(), dg = c.createGain();
+    var f0 = type === 'liquid' ? 190 : 175;
+    o.setPeriodicWave(glottalWave(c)); o.frequency.value = f0;
+    vib.frequency.value = 5.2; vg.gain.value = f0 * 0.012; vib.connect(vg); vg.connect(o.frequency);     // вибрато
+    drift.frequency.value = 0.7; dg.gain.value = f0 * 0.02; drift.connect(dg); dg.connect(o.frequency);  // медленный «живой» дрейф
+    var src2 = c.createGain(); o.connect(src2);
+    var br = noise(1), brf = c.createBiquadFilter(), brg = c.createGain(); brf.type = 'bandpass'; brf.frequency.value = 1500; brf.Q.value = .5; brg.gain.value = 0.025;
+    br.connect(brf); brf.connect(brg); brg.connect(src2); // лёгкое придыхание
+    var bus = c.createGain();
+    if (type === 'liquid') {
+      formant(c, src2, bus, 360, 6, 1.0); formant(c, src2, bus, 1350, 9, 0.45); formant(c, src2, bus, 2700, 12, 0.18);
+      peak = 2.2;
+    } else {
+      formant(c, src2, bus, 250, 5, 1.0); formant(c, src2, bus, 1100, 10, 0.12); formant(c, src2, bus, 2300, 12, 0.06);
+      peak = 2.6;
+    }
+    var notch = c.createBiquadFilter(); notch.type = 'notch'; notch.frequency.value = type === 'liquid' ? 2000 : 800; notch.Q.value = 2;
+    bus.connect(notch); notch.connect(out);
+    o.start(); vib.start(); drift.start(); br.start(); nodes = [o, vib, drift, br];
+  }
+  out.gain.linearRampToValueAtTime(peak * 0.45, t + 0.12); // мягкое начало, без щелчка
+  var comp = c.createDynamicsCompressor(); out.connect(comp); comp.connect(c.destination);
+  sndNode = {g:out, nodes:nodes};
+}
+function soundStop(){
+  if (recAudio) { try { recAudio.pause(); } catch (e) {} recAudio = null; }
+  if (!sndNode || !ctx) return; var h = sndNode; sndNode = null;
+  h.g.gain.cancelScheduledValues(ctx.currentTime); h.g.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+  setTimeout(function () { h.nodes.forEach(function (n) { try { n.stop(); } catch (e) {} }); }, 500);
+}
+function soundFor(L, ms, done){ soundStart(L); setTimeout(function () { soundStop(); if (done) setTimeout(done, 180); }, ms); }
+var humStart = soundStart, humStop = soundStop;
+function cheer(){
+  var c = audio(); if (!c) return;
+  var len = c.sampleRate * 1.2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+  for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.5);
+  var s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.7; g.gain.value = 0.5;
+  s.buffer = buf; s.connect(f); f.connect(g); g.connect(c.destination); s.start();
+}
+function whistle(){
+  var c = audio(); if (!c) return;
+  var o = c.createOscillator(), g = c.createGain(), l = c.createOscillator(), lg = c.createGain();
+  o.frequency.value = 2600; l.frequency.value = 30; lg.gain.value = 120; l.connect(lg); lg.connect(o.frequency);
+  g.gain.setValueAtTime(0.18, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.45);
+  o.connect(g); g.connect(c.destination); o.start(); l.start(); o.stop(c.currentTime + 0.5); l.stop(c.currentTime + 0.5);
+}
+
+/* ===== Звёзды, коллекция, русские подсказки ===== */
+function addStar(n, from){
+  var before = Math.floor(state.stars / 5); state.stars += (n || 1); save();
+  flyStar(from); setTimeout(renderStars, from ? 820 : 0);
+  var after = Math.floor(state.stars / 5);
+  if (after > before && after <= DINOS.length) setTimeout(function () { showUnlock(DINOS[after - 1]); }, 900);
+}
+function renderStars(){
+  $('star-count').textContent = state.stars;
+  var got = Math.floor(state.stars / 5), html = '';
+  for (var i = 0; i < DINOS.length; i++) html += '<span class="' + (i < got ? '' : 'empty') + '">' + DINOS[i] + '</span>';
+  $('album').innerHTML = html;
+}
+function applyRu(){
+  $('btn-ru').setAttribute('aria-pressed', state.ru ? 'true' : 'false');
+  document.querySelectorAll('.ruhint').forEach(function (el) { el.hidden = !state.ru; });
+}
+$('btn-ru').onclick = function () { state.ru = !state.ru; save(); applyRu(); };
+
+/* ===== Навигация ===== */
+var screens = ['start','menu','house','pass','kick','voice'];
+function show(name){
+  speechSynthesis && speechSynthesis.cancel(); humStop();
+  screens.forEach(function (s) { $('s-' + s).hidden = s !== name; });
+  $('btn-home').hidden = name === 'start' || name === 'menu';
+  $('bg').classList.toggle('game', name !== 'start' && name !== 'menu');
+  if (name === 'house') houseStart();
+  if (name === 'pass') passStart();
+  if (name === 'kick') kickStart();
+  if (name === 'voice') voiceStart();
+  if (name !== 'voice' && name !== 'house') voiceLetter = null;
+  if (name === 'menu') { cheerDino('dino-menu'); speak('Che cosa giochiamo?'); }
+}
+$('btn-home').onclick = function () { show('menu'); };
+document.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { show(b.dataset.go); }; });
+$('btn-start').onclick = function () {
+  audio(); whistle();
+  if (!pickVoice()) {
+    var w = $('voice-warn'); w.hidden = false;
+    w.innerHTML = 'Non trovo una voce italiana sul dispositivo.<br>Нет итальянского голоса. iPhone: Настройки → Универсальный доступ → Устный контент → Голоса → Итальянский. Android: Настройки → Синтез речи → Google → установить итальянский.';
+  }
+  speak('Ciao! Sono Rex. Giochiamo con le sillabe!', function () { show('menu'); });
+};
+
+/* ===== Микрофон: запись и простой акустический анализ M / L / S =====
+   Работает, когда страница открыта как обычный сайт (https или файл). В окне Artifact браузер микрофон не даёт.
+   Признаки по кадрам: громкость, доля энергии в полосах (<500 Гц, 500–2500, >3500) и частота пересечений нуля.
+   S — шум сверху; M — почти вся энергия внизу (губы сомкнуты); L — голос с заметной средней полосой. Пороги — в MIC. */
+var MIC = {minActive:0.35, sHigh:0.42, sZcr:0.22, mLow:0.72};
+function micSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function micRecord(opts){ // opts: {maxMs, onLevel(level), onDone({blob, url, verdict, stats})}
+  var c = audio(); if (!c || (!micSupported() && !opts.testSource)) { opts.onDone({error:'unsupported'}); return null; }
+  var api = {stop:function () {}}, stopped = false;
+  // opts.testSource(c) — тестовый вход вместо микрофона (для автопроверки анализа)
+  (opts.testSource ? Promise.resolve(null) : navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:true}})).then(function (stream) {
+    var srcN = stream ? c.createMediaStreamSource(stream) : opts.testSource(c), an = c.createAnalyser(); an.fftSize = 2048; srcN.connect(an);
+    var fbuf = new Float32Array(an.frequencyBinCount), tbuf = new Float32Array(an.fftSize), chunks = [], rec = null;
+    if (stream) try { rec = new MediaRecorder(stream); rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); }; rec.start(); } catch (e) {}
+    var t0 = performance.now(), prev = t0, floor = [], acc = {L:0, M:0, H:0, z:0, n:0, t:0}, binHz = c.sampleRate / an.fftSize, raf;
+    function frame(){
+      an.getFloatTimeDomainData(tbuf); an.getFloatFrequencyData(fbuf);
+      var rms = 0, zc = 0; for (var i = 0; i < tbuf.length; i++) { rms += tbuf[i] * tbuf[i]; if (i && (tbuf[i] >= 0) !== (tbuf[i - 1] >= 0)) zc++; }
+      rms = Math.sqrt(rms / tbuf.length); var now = performance.now(), el = now - t0, dt = now - prev; prev = now;
+      if (el < 250) floor.push(rms);
+      var thr = Math.max(0.012, (floor.length ? floor.reduce(function (a, b) { return a + b; }) / floor.length : 0) * 3);
+      if (opts.onLevel) opts.onLevel(Math.min(1, rms / 0.15));
+      if (el >= 250 && rms > thr) {
+        var Lb = 0, Mb = 0, Hb = 0;
+        for (var k = 1; k < fbuf.length; k++) { var f = k * binHz, pw = Math.pow(10, fbuf[k] / 10);
+          if (f >= 80 && f < 500) Lb += pw; else if (f >= 500 && f < 2500) Mb += pw; else if (f >= 3500 && f < 9000) Hb += pw; }
+        acc.L += Lb; acc.M += Mb; acc.H += Hb; acc.z += zc / tbuf.length; acc.n++; acc.t += dt;
+      }
+      if (!stopped && el < (opts.maxMs || 3000)) raf = requestAnimationFrame(frame); else finish();
+    }
+    function finish(){
+      if (stopped === 'done') return; stopped = 'done'; cancelAnimationFrame(raf);
+      var tot = acc.L + acc.M + acc.H || 1, st = {sec:acc.t / 1000, low:acc.L / tot, mid:acc.M / tot, high:acc.H / tot, zcr:acc.n ? acc.z / acc.n : 0};
+      var verdict = st.sec < MIC.minActive ? 'short' : (st.high > MIC.sHigh || st.zcr > MIC.sZcr) ? 'S' : (st.low > MIC.mLow ? 'M' : 'L');
+      var done = function () { if (stream) stream.getTracks().forEach(function (tr) { tr.stop(); });
+        var blob = chunks.length ? new Blob(chunks, {type:chunks[0].type}) : null;
+        opts.onDone({blob:blob, url:blob ? URL.createObjectURL(blob) : null, verdict:verdict, stats:st}); };
+      if (rec && rec.state !== 'inactive') { rec.onstop = done; rec.stop(); } else done();
+    }
+    api.stop = function () { if (!stopped) stopped = true; };
+    raf = requestAnimationFrame(frame);
+  }).catch(function () { opts.onDone({error:'denied'}); });
+  return api;
+}
+
+/* ===== 1. Домик буквы (M, L, S…) ===== */
+var MOUTHS = {
+  lips:'<svg class="mouth" viewBox="0 0 120 60" aria-hidden="true"><path d="M10 30 q50 -26 100 0 q-50 26 -100 0z" fill="#ff8a8a"/><path d="M10 30 h100" stroke="#a33" stroke-width="4"/>' +
+    '<path d="M4 14 q-6 16 0 32 M116 14 q6 16 0 32" stroke="#ffd23f" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
+  tongue:'<svg class="mouth" viewBox="0 0 120 70" aria-hidden="true"><ellipse cx="60" cy="35" rx="48" ry="27" fill="#ff8a8a"/><ellipse cx="60" cy="37" rx="38" ry="19" fill="#7a1f2b"/>' +
+    '<rect x="32" y="18" width="56" height="8" rx="3" fill="#fff"/><path d="M38 56 q22 -46 44 0z" fill="#ff5d7a"/><circle cx="60" cy="27" r="4" fill="#ffd23f"/></svg>',
+  teeth:'<svg class="mouth" viewBox="0 0 130 70" aria-hidden="true"><ellipse cx="58" cy="35" rx="48" ry="23" fill="#ff8a8a"/><rect x="24" y="25" width="68" height="9" rx="2" fill="#fff"/>' +
+    '<rect x="24" y="36" width="68" height="9" rx="2" fill="#fff"/><path d="M104 28 h18 M106 36 h20 M104 44 h16" stroke="#ffd23f" stroke-width="3" stroke-linecap="round"/></svg>'
+};
+function sylHTML(s){ return s.split('').map(function (ch) { return isCons(ch) ? '<span class="c">' + ch + '</span>' : ch; }).join(''); }
+function buildHouse(L){
+  var X = LETTERS[L], F = fwd(L), I = inv(L);
+  return [
+    { html:'<div class="letter-tile">' + L + '</div><p class="say">Ciao! Io sono la lettera <b>' + X.name.toUpperCase() + '</b>.</p><p class="ruhint">Буква ' + L + ' в алфавите называется «' + X.ru + '».</p>',
+      talk:function (d) { speak('Ciao! Io sono la lettera ' + X.name + '.', d); } },
+    { html:'<div class="vrow"><button class="letter-tile" id="hold-letter" aria-label="Tieni premuto">' + L + '<small>tieni premuto</small></button><div class="vcol">' + MOUTHS[X.mouth] +
+        '<button class="lnk-mic" id="try-mic">🎤 Prova tu!</button></div></div><p class="say">Nelle parole non dico il mio nome. Faccio: <b>' + X.sound + '!</b></p><p class="ruhint">В словах ' + L + ' звучит не «' + X.ru + '», а «' + X.soundRu + '»: ' + X.howRu + '. Пусть внук держит палец на букве и тянет звук вместе с ней.</p>',
+      talk:function (d) { speak('Nelle parole non dico il mio nome. ' + X.how + ' Faccio così:', function () { soundFor(L, 1300, d); }); },
+      after:function () { holdToHum($('hold-letter'), L); var pb = $('try-mic'); if (pb) pb.onclick = function () { voiceLetter = L; show('voice'); }; } },
+    { html:'<div class="row">' + X.words.map(function (w) {
+          return '<button class="word" data-word="' + w[2] + '"><span>' + w[0] + '</span><b><i>' + w[1][0] + '</i>' + w[1].slice(1) + '</b></button>'; }).join('') + '</div>' +
+        '<p class="say">Tocca una parola: senti <b>' + X.sound + '</b> all\'inizio?</p><p class="ruhint">Нажмите на слово: сначала звучит «' + X.soundRu + '», потом всё слово.</p>',
+      talk:function (d) { speak('Tocca una parola. Senti la ' + X.name + ' all\'inizio?', d); },
+      after:function () { document.querySelectorAll('[data-word]').forEach(function (b) { b.onclick = function () { soundFor(L, 600, function () { speak(b.dataset.word); }); }; }); } },
+    { html:'<div class="row">' + F.map(function (s) { return '<button class="syl" data-syl="' + s + '">' + sylHTML(s) + '</button>'; }).join('') + '</div>' +
+        '<p class="say">La ' + L + ' corre verso le vocali: <b>' + F.join(', ') + '</b>.</p><p class="ruhint">Прямые слоги: сначала «' + X.soundRu + '», потом гласная, слитно.</p>',
+      talk:function (d) { speak('La ' + X.name + ' corre verso le vocali. Tocca le sillabe!', d); }, after:bindSyl },
+    { html:'<div class="row">' + I.map(function (s) { return '<button class="syl" data-syl="' + s + '">' + sylHTML(s) + '</button>'; }).join('') + '</div>' +
+        '<p class="say">Ora le vocali vengono prima: <b>' + I.join(', ') + '</b>.</p><p class="ruhint">Обратные слоги: гласная впереди, ' + L + ' в конце. Самые трудные — их стоит повторять чаще.</p>',
+      talk:function (d) { speak('Adesso le vocali vengono prima e la ' + X.name + ' arriva dopo. Tocca!', d); }, after:bindSyl },
+    { html:'<svg class="dino bounce" viewBox="0 0 200 200" aria-hidden="true">' + REX + '</svg><h2>Bravo!</h2><p class="say">Nelle parole dico il mio <b>suono</b>, non il mio nome!</p>' +
+        '<p class="ruhint">Главное правило: в словах буква звучит, а не называется. Внук получил 3 звезды.</p><button class="big-btn" data-go2="kick">Ai rigori! ⚽</button>',
+      talk:function (d) { cheer(); party(document.querySelector('#house-body .dino')); speak('Bravo! Nelle parole dico il mio suono, non il mio nome!', d); },
+      after:function () { addStar(3, document.querySelector('#house-body .dino')); document.querySelector('[data-go2]').onclick = function () { show('kick'); }; } }
+  ];
+}
+var houseSteps = buildHouse('M');
+var hStep = 0;
+function holdToHum(el, L){
+  var on = function (e) { e.preventDefault(); el.classList.add('humming'); soundStart(L); };
+  var off = function () { el.classList.remove('humming'); humStop(); };
+  el.addEventListener('pointerdown', on); ['pointerup','pointerleave','pointercancel'].forEach(function (t) { el.addEventListener(t, off); });
+}
+function bindSyl(){
+  document.querySelectorAll('#house-body [data-syl]').forEach(function (b) {
+    b.onclick = function () {
+      b.classList.add('on'); var s = b.dataset.syl;
+      var go = function () { speak(say(s), function () { b.classList.remove('on'); }); };
+      if (isCons(s[0])) soundFor(s[0], 450, go); else go();
+    };
+  });
+}
+function houseRender(){
+  var st = houseSteps[hStep];
+  $('house-steps').innerHTML = houseSteps.map(function (_, i) { return '<i class="' + (i <= hStep ? 'on' : '') + '"></i>'; }).join('');
+  $('house-body').innerHTML = st.html; applyRu();
+  if (st.after) st.after();
+  st.talk();
+  $('house-next').hidden = hStep === houseSteps.length - 1;
+}
+function houseStart(){ houseSteps = buildHouse(cur()); hStep = 0; houseRender(); }
+$('house-next').onclick = function () { if (hStep < houseSteps.length - 1) { hStep++; houseRender(); } };
+$('house-again').onclick = function () { houseSteps[hStep].talk(); };
+
+/* ===== 2. Il passaggio: мяч-буква M летит к игроку-гласной. Где стоит M — там и порядок: слева = MO, справа = OM ===== */
+var pass = {round:0, target:'', inverse:false, busy:false, letter:'M'};
+function weighted(list){ // трудные слоги (с ошибками) выпадают чаще
+  var pool = []; list.forEach(function (s) { var w = 1 + Math.min(4, state.miss[s] || 0); for (var i = 0; i < w; i++) pool.push(s); });
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function passStart(){ pass.round = 0; passNext(); }
+function passNext(){
+  pass.busy = false; pass.inverse = pass.round >= 3 && pass.round % 2 === 1; // после 3 прямых — чередуем с обратными
+  var ls = activeLetters(); pass.letter = ls[Math.floor(Math.random() * ls.length)];
+  pass.target = weighted(pass.inverse ? inv(pass.letter) : fwd(pass.letter));
+  var pitch = $('pitch'), W = pitch.clientWidth, H = pitch.clientHeight;
+  var html = '', vx = pass.inverse ? 0.24 : 0.76, bx = pass.inverse ? 0.84 : 0.16;
+  // зигзаг в два ряда, чтобы игроки не налезали друг на друга на узком экране
+  VOWELS.forEach(function (v, i) { html += '<button class="player" data-v="' + v + '" style="left:' + ((vx + (i % 2 ? 0.09 : -0.09)) * 100) + '%;top:' + (13 + i * 18.5) + '%;animation-delay:' + (i * .25) + 's">' + v + '</button>'; });
+  if (pass.round < 2) { // рука показывает, куда тянуть мяч
+    var tv = pass.inverse ? pass.target[0] : pass.target[1], ti = VOWELS.indexOf(tv);
+    html += '<div class="hint" id="hint" style="--x1:' + (bx * 100) + '%;--y1:55%;--x2:' + ((vx + (ti % 2 ? 0.09 : -0.09)) * 100) + '%;--y2:' + (16 + ti * 18.5) + '%">👆</div>';
+  }
+  html += '<div class="ballp" id="ballp" style="left:' + (bx * 100) + '%;top:50%" aria-label="Palla ' + pass.letter + '">' + pass.letter + '</div>';
+  pitch.innerHTML = html;
+  $('pass-result').innerHTML = '';
+  $('pass-say').innerHTML = 'Passa la palla e fai: <b>' + pass.target + '</b>';
+  $('pass-ru').textContent = pass.inverse
+    ? 'Обратный слог: ' + pass.letter + ' справа, гласные слева. Перетащите мяч ' + pass.letter + ' к гласной — получится «' + pass.target + '». Можно просто нажать на гласную.'
+    : 'Перетащите мяч ' + pass.letter + ' к нужной гласной (или нажмите на гласную). Пока мяч летит, звучит «' + LETTERS[pass.letter].soundRu + '».';
+  passTalk();
+  dragBall($('ballp'));
+  pitch.querySelectorAll('[data-v]').forEach(function (p) { p.onclick = function () { if (!pass.busy) passTo(p); }; });
+}
+function passTalk(){ speak('Passa la palla e fai: ' + say(pass.target)); }
+$('pass-again').onclick = passTalk;
+function dragBall(ball){
+  var pitch = $('pitch'), start = null;
+  ball.addEventListener('pointerdown', function (e) {
+    if (pass.busy) return; e.preventDefault(); var h = $('hint'); if (h) h.remove(); ball.setPointerCapture(e.pointerId); ball.classList.add('drag'); start = true; soundStart(pass.letter);
+  });
+  ball.addEventListener('pointermove', function (e) {
+    if (!start) return; var r = pitch.getBoundingClientRect();
+    ball.style.left = Math.max(0, Math.min(r.width, e.clientX - r.left)) + 'px';
+    ball.style.top = Math.max(0, Math.min(r.height, e.clientY - r.top)) + 'px';
+  });
+  var end = function () {
+    if (!start) return; start = null; ball.classList.remove('drag'); humStop();
+    var b = ball.getBoundingClientRect(), best = null, bd = 1e9;
+    pitch.querySelectorAll('[data-v]').forEach(function (p) {
+      var q = p.getBoundingClientRect(), d = Math.hypot(b.left + b.width / 2 - q.left - q.width / 2, b.top + b.height / 2 - q.top - q.height / 2);
+      if (d < bd) { bd = d; best = p; }
+    });
+    if (best && bd < 90) passTo(best, true); else { ball.classList.add('anim'); ball.style.left = (pass.inverse ? 84 : 16) + '%'; ball.style.top = '50%'; setTimeout(function () { ball.classList.remove('anim'); }, 460); }
+  };
+  ball.addEventListener('pointerup', end); ball.addEventListener('pointercancel', end);
+}
+function passTo(player, dragged){
+  pass.busy = true;
+  var ball = $('ballp'), v = player.dataset.v, made = pass.inverse ? v + pass.letter : pass.letter + v;
+  var land = function () {
+    player.classList.add('hit');
+    $('pass-result').innerHTML = sylHTML(made); retrigger($('pass-result'), 'pop'); var h = $('hint'); if (h) h.remove();
+    speak(say(made), function () {
+      if (made === pass.target) {
+        cheer(); party(player); addStar(1, player); state.miss[made] = Math.max(0, (state.miss[made] || 0) - 1); save();
+        speak('Gol! Bravo!', function () { pass.round++; if (pass.round >= 8) passEnd(); else passNext(); });
+      } else {
+        state.miss[pass.target] = (state.miss[pass.target] || 0) + 1; save();
+        speak('Hai fatto ' + say(made) + '. Proviamo ' + say(pass.target) + '!', function () { passNext(); });
+      }
+    });
+  };
+  if (dragged) { ball.classList.add('anim'); ball.style.left = player.style.left; ball.style.top = player.style.top; setTimeout(land, 470); }
+  else { ball.classList.add('anim'); soundStart(pass.letter); ball.style.left = player.style.left; ball.style.top = player.style.top; setTimeout(function () { humStop(); land(); }, 470); }
+}
+function passEnd(){
+  $('pitch').innerHTML = '<div style="position:absolute;inset:0;display:grid;place-items:center"><svg class="dino bounce" viewBox="0 0 200 200">' + REX + '</svg></div>';
+  $('pass-say').innerHTML = 'Partita finita! Bravissimo!'; $('pass-result').innerHTML = '🏆';
+  cheer(); party(null); speak('Partita finita! Bravissimo!', function () { setTimeout(function () { show('menu'); }, 1500); });
+}
+
+/* ===== 3. I rigori: голос говорит слог, нужно попасть в правильный. Ловушки — зеркальный слог (MO/OM) и соседний ===== */
+var kick = {n:0, goals:0, target:'', busy:false, total:10, streak:0};
+function kickStart(){ kick.n = 0; kick.goals = 0; kick.streak = 0; kickNext(); }
+function mirror(s){ return s[1] + s[0]; } // MO ↔ OM
+function sameVowelOther(s, ls){ // MO → LO / SO: та же гласная, другая согласная
+  var ci = isCons(s[0]) ? 0 : 1, others = ls.filter(function (L) { return L !== s[ci]; });
+  if (!others.length) return null; var o = others[Math.floor(Math.random() * others.length)];
+  return ci === 0 ? o + s[1] : s[0] + o;
+}
+function kickNext(){
+  kick.busy = false;
+  var ls = activeLetters(), F = [], all = [];
+  ls.forEach(function (L) { F = F.concat(fwd(L)); all = all.concat(fwd(L), inv(L)); });
+  var pool = kick.n < 4 ? F : all;
+  kick.target = weighted(pool);
+  var opts = [kick.target];
+  if (kick.n >= 4) opts.push(mirror(kick.target)); // зеркальная ловушка — со второй половины
+  var sv = ls.length > 1 ? sameVowelOther(kick.target, ls) : null; // ловушка «другая согласная» в режиме TUTTE
+  if (sv && opts.indexOf(sv) < 0 && opts.length < 3) opts.push(sv);
+  while (opts.length < 3) { var r = pool[Math.floor(Math.random() * pool.length)]; if (opts.indexOf(r) < 0) opts.push(r); }
+  opts.sort(function () { return Math.random() - 0.5; });
+  $('kick-opts').innerHTML = opts.map(function (s) { return '<button class="syl" data-k="' + s + '">' + sylHTML(s) + '</button>'; }).join('');
+  $('kick-score').textContent = 'Tiro ' + (kick.n + 1) + ' di ' + kick.total + ' · Gol: ' + kick.goals;
+  $('kick-flash').textContent = '';
+  var kb = $('kick-ball'); kb.style.transition = 'none'; kb.style.left = '50%'; kb.style.bottom = ''; kb.style.transform = 'translateX(-50%) scale(1)';
+  $('keeper').style.left = '50%';
+  setTimeout(function () { kb.style.transition = ''; whistle(); setTimeout(kickTalk, 400); }, 50);
+  $('kick-opts').querySelectorAll('[data-k]').forEach(function (b) { b.onclick = function () { kickShoot(b); }; });
+}
+function kickTalk(){ speak(say(kick.target), null, true); }
+$('kick-again').onclick = kickTalk;
+function kickShoot(btn){
+  if (kick.busy) return; kick.busy = true;
+  var goal = $('goal').getBoundingClientRect(), r = btn.getBoundingClientRect(), kb = $('kick-ball');
+  var x = (r.left + r.width / 2 - goal.left) / goal.width * 100, ok = btn.dataset.k === kick.target;
+  retrigger(kb, 'fly'); kb.style.left = x + '%'; kb.style.bottom = (goal.height * 0.45) + 'px'; kb.style.transform = 'translateX(-50%) scale(.7)';
+  if (!ok) { $('keeper').style.left = x + '%'; retrigger($('keeper'), 'dive'); }
+  setTimeout(function () {
+    if (ok) {
+      kick.goals++; kick.streak++; cheer(); party(btn); retrigger($('goal'), 'net'); addStar(1, btn); state.miss[kick.target] = Math.max(0, (state.miss[kick.target] || 0) - 1); save();
+      $('kick-flash').textContent = kick.streak >= 3 ? 'GOOOL! 🔥' + kick.streak : 'GOOOL!'; retrigger($('kick-flash'), 'pop');
+      speak('Gol! ' + say(kick.target) + '!', function () { kick.n++; kick.n >= kick.total ? kickEnd() : kickNext(); });
+    } else {
+      state.miss[kick.target] = (state.miss[kick.target] || 0) + 1; save();
+      kick.streak = 0; $('kick-flash').textContent = 'Parata!'; retrigger($('kick-flash'), 'pop');
+      btn.classList.add('gone');
+      speak('Parata! Questa è ' + say(btn.dataset.k) + '. Ascolta ancora:', function () {
+        speak(say(kick.target), null, true); // загаданный слог — без субтитра, иначе это подсказка
+        kick.busy = false; kb.style.transition = 'none'; kb.style.left = '50%'; kb.style.bottom = ''; kb.style.transform = 'translateX(-50%)';
+        $('keeper').style.left = '50%'; $('kick-flash').textContent = ''; setTimeout(function () { kb.style.transition = ''; }, 50);
+      });
+    }
+  }, 480);
+}
+function kickEnd(){
+  $('kick-opts').innerHTML = '<span class="flash">🏆 ' + kick.goals + '/' + kick.total + '</span>';
+  $('kick-flash').textContent = 'Campione!';
+  cheer(); party(null); speak('Campione! Hai fatto ' + kick.goals + ' gol!', function () { setTimeout(function () { show('menu'); }, 1800); });
+}
+
+/* ===== 4. Parla tu! — внук тянет звук в микрофон, игра проверяет ===== */
+var voiceLetter = null, vgame = {n:0, total:5, target:'M', rec:null, url:null, busy:false};
+var VTIPS = {
+  M:'Chiudi le labbra e fai vibrare il naso: mmm!',
+  L:'Apri un po\' la bocca, lingua sui denti di sopra: lll!',
+  S:'Denti vicini, fai uscire l\'aria come un serpente: sss!'
+};
+function voiceStart(){
+  vgame.n = 0; $('v-mic').hidden = !micSupported(); $('v-nomic').hidden = micSupported(); $('s-voice').classList.toggle('nomic', !micSupported());
+  voiceNext();
+}
+function voiceNext(){
+  var ls = voiceLetter ? [voiceLetter] : activeLetters();
+  vgame.target = ls[Math.floor(Math.random() * ls.length)]; vgame.url = null; vgame.busy = false;
+  var X = LETTERS[vgame.target];
+  $('v-tile').textContent = vgame.target; $('v-mouth').innerHTML = MOUTHS[X.mouth];
+  $('v-say').innerHTML = 'Tieni premuto 🎤 e fai: <b>' + X.sound + '</b>';
+  $('v-res').textContent = ''; $('v-me').hidden = true; $('v-fill').style.width = '0%';
+  $('v-score').textContent = 'Prova ' + (vgame.n + 1) + ' di ' + vgame.total;
+  $('v-ru').textContent = 'Нажмите и держите кнопку 🎤, пока внук тянет «' + X.soundRu + '» (1–2 секунды). Игра оценит звук; «Ascolta te» — послушать себя. Оценка примерная: решающее слово за взрослым.';
+  speak('Tieni premuto il microfono e fai: ' + X.name + '. Cioè: ' + X.sound + '!', function () { soundFor(vgame.target, 900); });
+}
+function voiceMicDown(e){
+  e.preventDefault(); if (vgame.busy) return; vgame.busy = true; speechSynthesis && speechSynthesis.cancel(); soundStop();
+  $('v-mic').classList.add('rec'); $('v-res').textContent = '…';
+  vgame.rec = micRecord({maxMs:3500,
+    onLevel:function (lv) { $('v-fill').style.width = Math.round(lv * 100) + '%'; },
+    onDone:function (r) {
+      $('v-mic').classList.remove('rec'); vgame.busy = false;
+      if (r.error) { $('v-nomic').hidden = false; $('s-voice').classList.add('nomic'); $('v-mic').hidden = true; $('v-res').textContent = ''; return; }
+      vgame.url = r.url; $('v-me').hidden = !r.url;
+      var X = LETTERS[vgame.target], ok = r.verdict === vgame.target;
+      $('v-stats').textContent = 'низ ' + Math.round(r.stats.low * 100) + '% · середина ' + Math.round(r.stats.mid * 100) + '% · верх ' + Math.round(r.stats.high * 100) + '% · ' + r.stats.sec.toFixed(1) + ' с → ' + r.verdict;
+      if (r.verdict === 'short') { $('v-res').textContent = 'Più lungo!'; speak('Più lungo! Tieni il suono: ' + X.sound); return; }
+      if (ok) {
+        $('v-res').textContent = 'Bravo! ' + vgame.target + ' ⭐'; cheer(); party($('v-tile')); addStar(1, $('v-tile'));
+        speak('Bravo! Era proprio la ' + X.name + '!', function () { vgame.n++; vgame.n >= vgame.total ? voiceEnd() : voiceNext(); });
+      } else {
+        state.miss[vgame.target + '_snd'] = (state.miss[vgame.target + '_snd'] || 0) + 1; save();
+        $('v-res').textContent = 'Riprova!'; speak('Quasi! ' + VTIPS[vgame.target], function () { soundFor(vgame.target, 900); });
+      }
+    }});
+}
+function voiceMicUp(){ if (vgame.rec) vgame.rec.stop(); }
+function voiceEnd(){ $('v-res').textContent = '🏆'; cheer(); party(null); speak('Campione della voce!', function () { setTimeout(function () { show('menu'); }, 1500); }); }
+(function bindVoice(){
+  var m = $('v-mic'); m.addEventListener('pointerdown', voiceMicDown); ['pointerup','pointerleave','pointercancel'].forEach(function (t) { m.addEventListener(t, voiceMicUp); });
+  $('v-rex').onclick = function () { soundFor(vgame.target, 1200); };
+  $('v-me').onclick = function () { if (vgame.url) try { new Audio(vgame.url).play(); } catch (e) {} };
+  $('v-again').onclick = function () { voiceNext(); };
+})();
+
+/* ===== Панель для взрослых: голос ведущего и запись звуков живым голосом ===== */
+function openSettings(){
+  var vs = itVoices().slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); });
+  $('set-voice').innerHTML = vs.length ? vs.map(function (v) { return '<option value="' + v.name.replace(/"/g, '&quot;') + '"' + (voice && v.name === voice.name ? ' selected' : '') + '>' + v.name + (voiceScore(v) < 0 ? ' (робот)' : '') + '</option>'; }).join('') : '<option>Нет итальянских голосов</option>';
+  $('set-rate').value = state.rate || 0.9; $('set-rate-v').textContent = (state.rate || 0.9).toFixed(2);
+  renderRecRows(); $('settings').hidden = false;
+}
+function renderRecRows(){
+  $('set-rec').innerHTML = LETTER_KEYS.map(function (L) {
+    var has = state.rec && state.rec[L];
+    return '<div class="recrow"><b>' + L + '</b><span>«' + LETTERS[L].soundRu + '»</span>' +
+      '<button data-rec="' + L + '">● записать</button>' + (has ? '<button data-play="' + L + '">▶</button><button data-del="' + L + '">✕</button>' : '<small>синтез</small>') + '</div>';
+  }).join('') + (micSupported() ? '' : '<p class="note">Микрофон недоступен в этом окне. Откройте игру как обычную страницу (файл или сайт), чтобы записывать.</p>');
+  $('set-rec').querySelectorAll('[data-rec]').forEach(function (b) { b.onclick = function () {
+    var L = b.dataset.rec; b.textContent = '● говорите 2 с…'; b.disabled = true;
+    micRecord({maxMs:2200, onDone:function (r) {
+      if (r.error || !r.blob) { b.textContent = 'нет доступа к микрофону'; return; }
+      var fr = new FileReader(); fr.onload = function () { state.rec = state.rec || {}; state.rec[L] = fr.result; save(); renderRecRows(); }; fr.readAsDataURL(r.blob);
+    }});
+  }; });
+  $('set-rec').querySelectorAll('[data-play]').forEach(function (b) { b.onclick = function () { soundFor(b.dataset.play, 1500); }; });
+  $('set-rec').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { delete state.rec[b.dataset.del]; save(); renderRecRows(); }; });
+}
+$('btn-set').onclick = openSettings;
+$('set-close').onclick = function () { $('settings').hidden = true; };
+$('set-voice').onchange = function () { state.voice = this.value; save(); pickVoice(); };
+$('set-rate').oninput = function () { state.rate = +this.value; $('set-rate-v').textContent = state.rate.toFixed(2); save(); };
+$('set-test').onclick = function () { speak('Ciao! Sono Rex. Giochiamo con le sillabe: ma, la, sa!'); };
+
+function renderMenu(){
+  $('letters').innerHTML = LETTER_KEYS.concat('ALL').map(function (k) {
+    return '<button class="chip' + (k === 'ALL' ? ' all' : '') + (state.sel === k ? ' on' : '') + '" data-l="' + k + '" aria-pressed="' + (state.sel === k) + '">' + (k === 'ALL' ? 'TUTTE' : k) + '</button>';
+  }).join('');
+  var L = cur();
+  $('ico-house').textContent = L; $('t-house').textContent = 'La casa della ' + L;
+  $('ico-pass').textContent = (state.sel === 'ALL' ? '?' : L) + '→O';
+  $('letters').querySelectorAll('[data-l]').forEach(function (b) {
+    b.onclick = function () {
+      var k = b.dataset.l; state.sel = k; if (k !== 'ALL') state.last = k; save(); renderMenu();
+      speak(k === 'ALL' ? 'Tutte le lettere!' : 'La lettera ' + LETTERS[k].name + '!');
+    };
+  });
+}
+renderMenu(); renderStars(); applyRu();
+</script>
