@@ -1,6 +1,6 @@
 # DinoGol 🦖⚽
 
-**Игра:** https://13ivanivanov13.github.io/dinogol/
+**Игра:** https://13ivanivanov13-wq.github.io/dinogol/
 
 [Русский](#русский) · [Italiano](#italiano)
 
