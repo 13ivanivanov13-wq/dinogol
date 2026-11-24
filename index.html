@@ -49,7 +49,7 @@ p{margin:0}
 .speak{width:clamp(38px,calc(var(--u)*7),56px);height:clamp(38px,calc(var(--u)*7),56px);border-radius:50%;background:var(--chalk);color:var(--ink);font-size:clamp(18px,calc(var(--u)*3.2),26px);box-shadow:0 4px 0 #0000002e;flex:none}
 
 /* Главное меню: на узком экране карточки строками (значок слева), на широком — в ряд */
-.menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,calc(var(--u)*2),16px);width:min(100%,760px)}
+.menu{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,calc(var(--u)*2),16px);width:min(100%,760px)}
 .card{background:var(--chalk);color:var(--ink);border-radius:clamp(12px,calc(var(--u)*2.6),22px);padding:clamp(8px,calc(var(--u)*2),18px);display:flex;flex-direction:column;align-items:center;gap:clamp(2px,calc(var(--u)*.8),8px);box-shadow:0 5px 0 #00000030;text-align:center;min-width:0}
 .card .ico{font-family:var(--font-letter);font-weight:700;font-size:clamp(26px,calc(var(--u)*6.5),56px);line-height:1}
 .card b{font-family:var(--font-display);font-weight:400;font-size:clamp(16px,calc(var(--u)*3),26px)}
@@ -164,10 +164,18 @@ body{background:linear-gradient(180deg,#0b1f38 0%,#173a5e 20%,#2f7d4f 29%)}
 .chip{font:700 clamp(20px,calc(var(--u)*4.4),38px)/1 var(--font-letter);width:2em;height:2em;border-radius:50%;background:#ffffff26;color:var(--chalk);border:3px solid #ffffff55;transition:transform .2s}
 .chip.all{width:auto;padding:0 .7em;border-radius:1em;font-size:clamp(14px,calc(var(--u)*2.4),22px);font-family:var(--font-display);font-weight:400;letter-spacing:.04em}
 .chip.on{background:var(--ball);color:var(--ink);border-color:var(--ball);transform:scale(1.1)}
+@media (max-aspect-ratio:4/5){ .menu{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-height:520px){ #s-menu .dino{display:none} } /* низкий экран (телефон лёжа): меню без большого Rex, чтобы всё влезло */
 /* Текст поверх неба и трибун: тёмный ореол, чтобы читался на любом фоне */
 .screen > h2,.screen > .say,.nav .say,.score,.album + .ruhint,.screen > .ruhint,#v-stats{text-shadow:0 2px 0 #0b1f38,0 0 6px #0b1f38,0 0 12px #0b1f38cc}
 /* Parla tu! */
+#say-syl{font-size:clamp(56px,calc(var(--u)*15),150px)}
+.mic{width:clamp(72px,calc(var(--u)*13),116px);height:clamp(72px,calc(var(--u)*13),116px);border-radius:50%;background:var(--dino);font-size:clamp(34px,calc(var(--u)*6.5),58px);box-shadow:0 6px 0 #b85a1d}
+.mic:active{transform:translateY(4px);box-shadow:0 2px 0 #b85a1d}
+.mic.rec{background:#e5484d;animation:recpulse .8s ease-in-out infinite}
+@keyframes recpulse{50%{box-shadow:0 6px 0 #9c2a2e,0 0 0 14px #e5484d55}}
+.heard{min-height:1.4em;color:#d5e7d9}
+@media (max-height:520px){ #say-syl{font-size:44px} .mic{width:60px;height:60px;font-size:28px} }
 .vcol{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,calc(var(--u)*1.4),12px)}
 #s-menu .dino{width:clamp(56px,calc(var(--u)*11),140px)}
 .vrow{display:flex;align-items:center;gap:clamp(8px,calc(var(--u)*2),20px)}
@@ -223,6 +231,7 @@ body{background:linear-gradient(180deg,#0b1f38 0%,#173a5e 20%,#2f7d4f 29%)}
       <button class="card" data-go="house"><span class="ico" id="ico-house">M</span><b id="t-house">La casa della M</b><small>Conosci la lettera</small><small class="ruhint" hidden>Домик буквы: имя и звук</small></button>
       <button class="card" data-go="pass"><span class="ico" id="ico-pass">M→O</span><b>Il passaggio</b><small>Tocca la vocale, fai la sillaba</small><small class="ruhint" hidden>Сцепка: слияние звуков</small></button>
       <button class="card" data-go="kick"><span class="ico">🥅</span><b>I rigori</b><small>Ascolta e tira!</small><small class="ruhint" hidden>Узнай слог на слух</small></button>
+      <button class="card" data-go="say"><span class="ico">🎤</span><b>Parla tu!</b><small>Ripeti la sillaba</small><small class="ruhint" hidden>Повтори слог в микрофон</small></button>
     </div>
     <p class="say" style="font-size:clamp(13px,calc(var(--u)*2.2),18px)">I tuoi dinosauri</p>
     <div class="album" id="album"></div>
@@ -245,6 +254,22 @@ body{background:linear-gradient(180deg,#0b1f38 0%,#173a5e 20%,#2f7d4f 29%)}
     <p class="ruhint" id="pass-ru" hidden></p>
     <div class="pitch" id="pitch"></div>
     <div class="result" id="pass-result" aria-live="polite"></div>
+  </section>
+
+  <!-- Parla tu! (повтори слог в микрофон) -->
+  <section class="screen" id="s-say" hidden>
+    <div class="score" id="say-score"></div>
+    <div class="nav"><button class="speak" id="say-again" aria-label="Ascolta di nuovo">🔊</button><p class="say">Ascolta Rex e ripeti!</p></div>
+    <p class="ruhint" id="say-ru" hidden></p>
+    <div class="syl" id="say-syl">MU</div>
+    <button class="mic" id="say-mic" aria-label="Premi e parla">🎤</button>
+    <p class="say heard" id="say-heard" aria-live="polite"></p>
+    <div class="nav">
+      <button class="speak" id="say-ok" aria-label="Giusto" title="Для взрослых: засчитать, если ребёнок сказал правильно">👍</button>
+      <button class="speak" id="say-skip" aria-label="Un'altra sillaba">↻</button>
+    </div>
+    <div class="flash" id="say-flash" aria-live="polite"></div>
+    <p class="warn" id="say-warn" hidden></p>
   </section>
 
   <!-- I rigori (узнавание на слух) -->
@@ -331,7 +356,7 @@ function popStars(){ var st = $('stars'); st.classList.remove('pop'); void st.of
 function retrigger(el, cls){ if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 var subTimer = null;
 function subtitle(text){ var el = $('sub'); el.textContent = text; el.classList.add('on'); clearTimeout(subTimer); subTimer = setTimeout(function () { el.classList.remove('on'); }, 1400 + text.length * 70); }
-document.addEventListener('pointerdown', function (e) { var b = e.target.closest && e.target.closest('button'); if (b && b.id !== 'hold-letter') blip(); });
+document.addEventListener('pointerdown', function (e) { var b = e.target.closest && e.target.closest('button'); if (b && b.id !== 'hold-letter' && b.id !== 'say-mic') blip(); });
 function blip(){ var c = ctx; if (!c) return; var o = c.createOscillator(), g = c.createGain(); o.frequency.value = 620 + Math.random() * 120;
   g.gain.setValueAtTime(.08, c.currentTime); g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .09); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + .1); }
 function showUnlock(emoji){
@@ -468,15 +493,16 @@ function applyRu(){
 $('btn-ru').onclick = function () { state.ru = !state.ru; save(); applyRu(); };
 
 /* ===== Навигация ===== */
-var screens = ['start','menu','house','pass','kick'];
+var screens = ['start','menu','house','pass','kick','say'];
 function show(name){
-  if (window.speechSynthesis) speechSynthesis.cancel(); humStop();
+  if (window.speechSynthesis) speechSynthesis.cancel(); humStop(); sayStop();
   screens.forEach(function (s) { $('s-' + s).hidden = s !== name; });
   $('btn-home').hidden = name === 'start' || name === 'menu';
   $('bg').classList.toggle('game', name !== 'start' && name !== 'menu');
   if (name === 'house') houseStart();
   if (name === 'pass') passStart();
   if (name === 'kick') kickStart();
+  if (name === 'say') sayStart();
   if (name === 'menu') { cheerDino('dino-menu'); speak('Che cosa giochiamo?'); }
 }
 $('btn-home').onclick = function () { show('menu'); };
@@ -664,6 +690,83 @@ function kickEnd(){
   $('kick-flash').textContent = 'Campione!';
   cheer(); party(null); speak('Campione! Hai fatto ' + kick.goals + ' gol!', function () { setTimeout(function () { show('menu'); }, 1800); });
 }
+
+/* ===== 4. Parla tu!: Rex говорит слог, внук повторяет в микрофон =====
+   Речь распознаёт сам браузер: Safari — сервис Apple, Chrome — сервис Google (нужен интернет, Firefox не умеет).
+   Отдельные слоги распознаются неточно, поэтому взрослый может засчитать попытку кнопкой 👍. */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var sayG = {n:0, total:8, target:'', tries:0, lock:false, rec:null};
+function heardNorm(t){ // «Mùu», «ohm» → «mu», «om»: без ударений, без h, без повторов букв
+  return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/h/g, '').replace(/[^a-z ]/g, ' ').replace(/(.)\1+/g, '$1').replace(/ +/g, ' ').trim();
+}
+function heardMatch(alts, syl){
+  var t = syl.toLowerCase();
+  return alts.some(function (a) { var n = heardNorm(a); return n.replace(/ /g, '') === t || n.split(' ').indexOf(t) >= 0; });
+}
+function sayWarn(html){ var w = $('say-warn'); w.innerHTML = html; w.hidden = !html; }
+function sayStart(){
+  sayG.n = 0; $('say-mic').hidden = !SR;
+  sayWarn(SR ? '' : 'Questo browser non riconosce la voce.<br>Этот браузер не распознаёт речь. Откройте игру в Safari (iPhone, iPad, Mac) или Chrome (Android, ноутбук). Пока можно так: ребёнок повторяет слог, взрослый нажимает 👍, если правильно.');
+  sayNext();
+}
+function sayNext(){
+  var pool = [];
+  activeLetters().forEach(function (L) { pool = pool.concat(sayG.n < 4 ? fwd(L) : fwd(L).concat(inv(L))); }); // сначала прямые, потом и обратные
+  sayG.target = weighted(pool); sayG.tries = 0; sayG.lock = false;
+  $('say-syl').innerHTML = sylHTML(sayG.target);
+  $('say-heard').textContent = ''; $('say-flash').textContent = '';
+  $('say-score').textContent = 'Sillaba ' + (sayG.n + 1) + ' di ' + sayG.total;
+  $('say-ru').textContent = 'Rex говорит слог «' + sayG.target + '». Нажмите 🎤 — ребёнок повторяет, игра проверит. Если игра не поняла, а ребёнок сказал верно, нажмите 👍. ↻ — другой слог.';
+  sayTalk();
+}
+function sayTalk(){ speak('Ripeti: ' + say(sayG.target)); }
+function sayStop(){ if (sayG.rec) { try { sayG.rec.abort(); } catch (e) {} sayG.rec = null; } $('say-mic').classList.remove('rec'); }
+function sayListen(){
+  if (!SR || sayG.lock || sayG.rec) return;
+  if (window.speechSynthesis) speechSynthesis.cancel(); soundStop();
+  var r = new SR(), got = false, err = '';
+  r.lang = 'it-IT'; r.interimResults = false; r.maxAlternatives = 5;
+  sayG.rec = r; $('say-mic').classList.add('rec'); $('say-heard').textContent = '…';
+  var timer = setTimeout(function () {
+    try { r.stop(); } catch (e) {}
+    setTimeout(function () { if (sayG.rec === r) { sayStop(); $('say-heard').textContent = ''; } }, 2000); // Safari на iOS иногда не присылает onend — разблокировать 🎤
+  }, 6000);
+  r.onresult = function (e) { got = true; var alts = [], res = e.results[0]; for (var i = 0; i < res.length; i++) alts.push(res[i].transcript); sayJudge(alts); };
+  r.onerror = function (e) { err = e.error; };
+  r.onend = function () {
+    clearTimeout(timer); if (sayG.rec !== r) return; sayG.rec = null; $('say-mic').classList.remove('rec');
+    if (got) return;
+    $('say-heard').textContent = '';
+    if (err === 'not-allowed' || err === 'service-not-allowed') sayWarn('Il microfono non è permesso.<br>Нет доступа к микрофону или распознаванию речи. Разрешите микрофон для этого сайта (iPhone/iPad: Настройки → Safari → Микрофон). На iPhone и iPad также включите Диктовку: Настройки → Основные → Клавиатура → Включить диктовку.');
+    else if (err === 'network') sayWarn('Serve internet.<br>Для проверки произношения нужен интернет.');
+    else speak('Non ho sentito. Premi il microfono e parla!');
+  };
+  try { r.start(); } catch (e) { sayG.rec = null; $('say-mic').classList.remove('rec'); $('say-heard').textContent = ''; }
+}
+function sayJudge(alts){
+  $('say-heard').textContent = 'Rex ha sentito: «' + alts[0].trim() + '»';
+  if (heardMatch(alts, sayG.target)) { sayWin(); return; }
+  sayG.tries++; state.miss[sayG.target] = (state.miss[sayG.target] || 0) + 1; save();
+  $('say-flash').textContent = 'Riprova!'; retrigger($('say-flash'), 'pop');
+  if (sayG.tries >= 3) { sayG.lock = true; speak('Bravo che ci provi! Andiamo avanti.', sayAdvance); } // не мучить ребёнка: после 3 попыток дальше
+  else speak('Quasi! Ascolta: ' + say(sayG.target));
+}
+function sayWin(){
+  if (sayG.lock) return; sayG.lock = true; sayStop();
+  var t = sayG.target; state.miss[t] = Math.max(0, (state.miss[t] || 0) - 1); save();
+  $('say-flash').textContent = 'Bravo! ⭐'; retrigger($('say-flash'), 'pop');
+  cheer(); party($('say-syl')); addStar(1, $('say-syl'));
+  speak('Bravo! ' + say(t) + '!', sayAdvance);
+}
+function sayAdvance(){ sayG.n++; if (sayG.n >= sayG.total) sayEnd(); else sayNext(); }
+function sayEnd(){
+  $('say-syl').textContent = '🏆'; $('say-heard').textContent = ''; $('say-flash').textContent = 'Campione!';
+  cheer(); party(null); speak('Campione della voce!', function () { setTimeout(function () { show('menu'); }, 1500); });
+}
+$('say-mic').onclick = sayListen;
+$('say-again').onclick = function () { sayStop(); sayTalk(); };
+$('say-ok').onclick = sayWin;
+$('say-skip').onclick = function () { if (!sayG.lock) { sayStop(); sayNext(); } };
 
 /* ===== Панель для взрослых: голос ведущего ===== */
 function openSettings(){
